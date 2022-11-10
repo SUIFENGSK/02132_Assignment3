@@ -22,14 +22,15 @@ class Accelerator extends Module {
   val dataReg = RegInit(0.U(32.W))
   val xReg = RegInit(0.U(16.W))
   val yReg = RegInit(0.U(16.W))
+  val tempReg = RegInit(0.U(16.W))
+  val inReg = RegInit(0.U(16.W))
+  val outReg = RegInit(0.U(16.W))
 
   // Default values
   io.done := false.B
   io.address := 0.U
   io.writeEnable := false.B
   io.dataWrite := 0.U
-  xReg := 0.U
-  yReg := 0.U
 
   // State machine
   switch (stateReg) {
@@ -39,95 +40,99 @@ class Accelerator extends Module {
       }
     }
     is (xLoop) {
-      when (xReg > 19.U) {
-        stateReg := done
-      } .otherwise {
+      when (xReg <= 19.U) {
         stateReg := yLoop
-        yReg := 0.U
-        addressReg := 0.U // TODO: why?
+      } .otherwise {
+        stateReg := done
       }
     }
     is (yLoop) {
-      when (yReg > 19.U) {
-        stateReg := xInc
-      } .otherwise {
+      when (yReg <= 19.U) {
+        inReg := xReg + (20.U * yReg)
         stateReg := checkBorder
+      } .otherwise {
+        stateReg := xInc
       }
     }
     is (checkBorder) {
       when (xReg === 0.U || xReg === 19.U || yReg === 0.U || yReg === 19.U) {
+        outReg := inReg + 400.U // Output address
         stateReg := writeBlack
-        addressReg := xReg + 20 * yReg + 400.U // Output address
       } .otherwise {
         stateReg := isBlackPixel
-        addressReg := xReg + 20 * yReg // Input address
-        io.address := addressReg
       }
     }
     is (isBlackPixel) {
+      io.address := inReg
       when (io.dataRead === 0.U) {
+        outReg := xReg + (20.U * yReg) + 400.U // Output address
         stateReg := writeBlack
-        addressReg := xReg + 20 * yReg + 400.U // Output address
       } .otherwise {
+        tempReg := inReg - 1.U // Get pixel to the left
         stateReg := checkLeft
-        io.address := addressReg - 1.U // Get pixel to the left
       }
     }
     is (writeBlack) {
-      stateReg := yInc
+      io.address := outReg
       io.writeEnable := true.B
       io.dataWrite := 0.U
-      io.address := addressReg
+      stateReg := yInc
     }
     is (checkLeft) {
+      io.address := tempReg
       when (io.dataRead === 0.U) {
+        outReg := inReg + 400.U // Output address
         stateReg := writeBlack
-        addressReg := addressReg + 400.U // Output address
       } .otherwise {
+        tempReg := inReg + 1.U // Get pixel to the right
         stateReg := checkRight
       }
     }
     is (checkRight) {
+      io.address := tempReg
       when (io.dataRead === 0.U) {
+        outReg := inReg + 400.U // Output address
         stateReg := writeBlack
-        addressReg := addressReg + 400.U // Output address
       } .otherwise {
+        tempReg := inReg - 20.U // Get pixel above
         stateReg := checkUp
-        io.address := addressReg - 20.U // Get pixel above
       }
     }
     is (checkUp) {
+      io.address := tempReg
       when (io.dataRead === 0.U) {
+        outReg := inReg + 400.U // Output address
         stateReg := writeBlack
-        addressReg := addressReg + 400.U // Output address
       } .otherwise {
+        tempReg := inReg + 20.U // Get pixel below
         stateReg := checkDown
-        io.address := addressReg + 20.U // Get pixel below
       }
     }
     is (checkDown) {
+      io.address := tempReg
       when (io.dataRead === 0.U) {
+        outReg := inReg + 400.U // Output address
         stateReg := writeBlack
-        addressReg := addressReg + 400.U // Output address
       } .otherwise {
+        outReg := inReg + 400.U // Output address
         stateReg := writeWhite
-        addressReg := addressReg + 400.U // Output address
       }
     }
     is (writeWhite) {
-      stateReg := yInc
       io.writeEnable := true.B
       io.dataWrite := 255.U
-      io.address := addressReg // Output address
+      io.address := outReg // Output address
+      stateReg := yInc
     }
     is (yInc) {
-      stateReg := xInc
       io.writeEnable := false.B
       yReg := yReg + 1.U
+      stateReg := yLoop
     }
     is (xInc) {
-      stateReg := xLoop
+      yReg := 0.U
       xReg := xReg + 1.U
+      stateReg := xLoop
     }
     is (done) {
       io.done := true.B
