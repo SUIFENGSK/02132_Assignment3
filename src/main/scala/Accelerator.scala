@@ -22,7 +22,6 @@ class Accelerator extends Module {
   val dataReg = RegInit(0.U(32.W))
   val xReg = RegInit(0.U(16.W))
   val yReg = RegInit(0.U(16.W))
-  val tempReg = RegInit(0.U(16.W))
   val inReg = RegInit(0.U(16.W))
   val outReg = RegInit(0.U(16.W))
 
@@ -68,7 +67,6 @@ class Accelerator extends Module {
         outReg := xReg + (20.U * yReg) + 400.U // Output address
         stateReg := writeBlack
       } .otherwise {
-        tempReg := inReg - 1.U // Get pixel to the left
         stateReg := checkLeft
       }
     }
@@ -79,42 +77,38 @@ class Accelerator extends Module {
       stateReg := yInc
     }
     is (checkLeft) {
-      io.address := tempReg
+      io.address := inReg - 1.U // Get pixel to the left
       when (io.dataRead === 0.U) {
         outReg := inReg + 400.U // Output address
         stateReg := writeBlack
       } .otherwise {
-        tempReg := inReg + 1.U // Get pixel to the right
         stateReg := checkRight
       }
     }
     is (checkRight) {
-      io.address := tempReg
+      io.address := inReg + 1.U // Get pixel to the right
       when (io.dataRead === 0.U) {
         outReg := inReg + 400.U // Output address
         stateReg := writeBlack
       } .otherwise {
-        tempReg := inReg - 20.U // Get pixel above
         stateReg := checkUp
       }
     }
     is (checkUp) {
-      io.address := tempReg
+      io.address := inReg - 20.U // Get pixel above
       when (io.dataRead === 0.U) {
         outReg := inReg + 400.U // Output address
         stateReg := writeBlack
       } .otherwise {
-        tempReg := inReg + 20.U // Get pixel below
         stateReg := checkDown
       }
     }
     is (checkDown) {
-      io.address := tempReg
+      io.address := inReg + 20.U // Get pixel below
+      outReg := inReg + 400.U // Output address
       when (io.dataRead === 0.U) {
-        outReg := inReg + 400.U // Output address
         stateReg := writeBlack
       } .otherwise {
-        outReg := inReg + 400.U // Output address
         stateReg := writeWhite
       }
     }
