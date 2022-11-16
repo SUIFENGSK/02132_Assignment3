@@ -18,12 +18,10 @@ class Accelerator extends Module {
   val stateReg = RegInit(idle)
 
   // Support registers
-  val addressReg = RegInit(0.U(16.W))
   val dataReg = RegInit(0.U(32.W))
   val xReg = RegInit(0.U(16.W))
   val yReg = RegInit(0.U(16.W))
   val inReg = RegInit(0.U(16.W))
-  val outReg = RegInit(0.U(16.W))
 
   // Default values
   io.done := false.B
@@ -54,7 +52,6 @@ class Accelerator extends Module {
       }
     }
     is (checkBorder) {
-      outReg := inReg + 400.U // Output address
       when (xReg === 0.U || xReg === 19.U || yReg === 0.U || yReg === 19.U) {
         stateReg := writeBlack
       } .otherwise {
@@ -70,7 +67,7 @@ class Accelerator extends Module {
       }
     }
     is (writeBlack) {
-      io.address := outReg
+      io.address := inReg + 400.U
       io.writeEnable := true.B
       io.dataWrite := 0.U
       stateReg := yInc
@@ -110,7 +107,7 @@ class Accelerator extends Module {
     is (writeWhite) {
       io.writeEnable := true.B
       io.dataWrite := 255.U
-      io.address := outReg // Output address
+      io.address := inReg + 400.U // Output address
       stateReg := yInc
     }
     is (yInc) {
