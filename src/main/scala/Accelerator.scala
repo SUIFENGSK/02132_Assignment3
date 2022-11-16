@@ -54,8 +54,8 @@ class Accelerator extends Module {
       }
     }
     is (checkBorder) {
+      outReg := inReg + 400.U // Output address
       when (xReg === 0.U || xReg === 19.U || yReg === 0.U || yReg === 19.U) {
-        outReg := inReg + 400.U // Output address
         stateReg := writeBlack
       } .otherwise {
         stateReg := isBlackPixel
@@ -64,7 +64,6 @@ class Accelerator extends Module {
     is (isBlackPixel) {
       io.address := inReg
       when (io.dataRead === 0.U) {
-        outReg := xReg + (20.U * yReg) + 400.U // Output address
         stateReg := writeBlack
       } .otherwise {
         stateReg := checkLeft
@@ -79,7 +78,6 @@ class Accelerator extends Module {
     is (checkLeft) {
       io.address := inReg - 1.U // Get pixel to the left
       when (io.dataRead === 0.U) {
-        outReg := inReg + 400.U // Output address
         stateReg := writeBlack
       } .otherwise {
         stateReg := checkRight
@@ -88,7 +86,6 @@ class Accelerator extends Module {
     is (checkRight) {
       io.address := inReg + 1.U // Get pixel to the right
       when (io.dataRead === 0.U) {
-        outReg := inReg + 400.U // Output address
         stateReg := writeBlack
       } .otherwise {
         stateReg := checkUp
@@ -97,7 +94,6 @@ class Accelerator extends Module {
     is (checkUp) {
       io.address := inReg - 20.U // Get pixel above
       when (io.dataRead === 0.U) {
-        outReg := inReg + 400.U // Output address
         stateReg := writeBlack
       } .otherwise {
         stateReg := checkDown
@@ -105,7 +101,6 @@ class Accelerator extends Module {
     }
     is (checkDown) {
       io.address := inReg + 20.U // Get pixel below
-      outReg := inReg + 400.U // Output address
       when (io.dataRead === 0.U) {
         stateReg := writeBlack
       } .otherwise {
