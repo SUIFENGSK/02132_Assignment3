@@ -18,7 +18,6 @@ class Accelerator extends Module {
   val stateReg = RegInit(idle)
 
   // Support registers
-  val dataReg = RegInit(0.U(32.W))
   val xReg = RegInit(0.U(16.W))
   val yReg = RegInit(0.U(16.W))
   val inReg = RegInit(0.U(16.W))
@@ -69,7 +68,7 @@ class Accelerator extends Module {
         io.writeEnable := true.B
         stateReg := writeNextBlack
       } .otherwise {
-        io.address := inReg + 20.U // Get pixel to the left
+        io.address := inReg + 20.U // Get pixel below
         dataRead := io.dataRead
         stateReg := checkDown
       }
@@ -84,8 +83,18 @@ class Accelerator extends Module {
       io.writeEnable := true.B
       stateReg := yInc
     }
+    is(checkDown) {
+      when(dataRead === 0.U) {
+        io.address := inReg + 400.U
+        io.writeEnable := true.B
+        stateReg := writeNextBlack
+      }.otherwise {
+        io.address := inReg - 1.U
+        dataRead := io.dataRead
+        stateReg := checkLeft
+      }
+    }
     is (checkLeft) {
-
       when (dataRead === 0.U) {
         stateReg := writeBlack
       } .otherwise {
@@ -111,17 +120,6 @@ class Accelerator extends Module {
         io.dataWrite := 255.U
         io.address := inReg + 400.U // Output address
         stateReg := yInc
-      }
-    }
-    is (checkDown) {
-      when (dataRead === 0.U) {
-        io.address := inReg + 400.U
-        io.writeEnable := true.B
-        stateReg := writeNextBlack
-      } .otherwise {
-        io.address := inReg - 1.U
-        dataRead := io.dataRead
-        stateReg := checkLeft
       }
     }
     is (yInc) {
