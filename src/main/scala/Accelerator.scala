@@ -74,7 +74,7 @@ class Accelerator extends Module {
       }
     }
     is (writeNextBlack) {
-      io.address := inReg + 400.U + 1.U
+      io.address := inReg + 400.U + 20.U
       yReg := yReg + 2.U
       stateReg := yLoop
     }
