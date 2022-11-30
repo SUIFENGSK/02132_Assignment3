@@ -18,7 +18,6 @@ class Accelerator extends Module {
   val stateReg = RegInit(idle)
 
   // Support registers
-  val dataReg = RegInit(0.U(32.W))
   val xReg = RegInit(0.U(16.W))
   val yReg = RegInit(0.U(16.W))
   val inReg = RegInit(0.U(16.W))
@@ -63,8 +62,15 @@ class Accelerator extends Module {
       when (io.dataRead === 0.U) {
         stateReg := writeBlack
       } .otherwise {
-        stateReg := checkLeft
+        io.address := inReg + 20.U // Get pixel below
+        dataRead := io.dataRead
+        stateReg := checkDown
       }
+    }
+    is (writeNextBlack) {
+      io.address := inReg + 400.U + 20.U
+      yReg := yReg + 2.U
+      stateReg := yLoop
     }
     is (writeBlack) {
       io.address := inReg + 400.U
@@ -72,11 +78,23 @@ class Accelerator extends Module {
       io.dataWrite := 0.U
       stateReg := yInc
     }
+    is(checkDown) {
+      when(dataRead === 0.U) {
+        io.address := inReg + 400.U
+        io.writeEnable := true.B
+        stateReg := writeNextBlack
+      }.otherwise {
+        io.address := inReg - 1.U // Get pixel to the left
+        dataRead := io.dataRead
+        stateReg := checkLeft
+      }
+    }
     is (checkLeft) {
-      io.address := inReg - 1.U // Get pixel to the left
-      when (io.dataRead === 0.U) {
+      when (dataRead === 0.U) {
         stateReg := writeBlack
       } .otherwise {
+        io.address := inReg + 1.U // Get pixel to the right
+        dataRead := io.dataRead
         stateReg := checkRight
       }
     }
@@ -85,6 +103,8 @@ class Accelerator extends Module {
       when (io.dataRead === 0.U) {
         stateReg := writeBlack
       } .otherwise {
+        io.address := inReg - 20.U // Get pixel above
+        dataRead := io.dataRead
         stateReg := checkUp
       }
     }
@@ -95,20 +115,6 @@ class Accelerator extends Module {
       } .otherwise {
         stateReg := checkDown
       }
-    }
-    is (checkDown) {
-      io.address := inReg + 20.U // Get pixel below
-      when (io.dataRead === 0.U) {
-        stateReg := writeBlack
-      } .otherwise {
-        stateReg := writeWhite
-      }
-    }
-    is (writeWhite) {
-      io.writeEnable := true.B
-      io.dataWrite := 255.U
-      io.address := inReg + 400.U // Output address
-      stateReg := yInc
     }
     is (yInc) {
       io.writeEnable := false.B
