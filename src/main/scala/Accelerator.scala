@@ -23,6 +23,7 @@ class Accelerator extends Module {
   val inReg = RegInit(0.U(16.W))
   val dataRead = RegInit(0.U(32.W))
 
+
   // Default values
   io.done := false.B
   io.address := 0.U
