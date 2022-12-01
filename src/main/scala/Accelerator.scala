@@ -89,7 +89,7 @@ class Accelerator extends Module {
         io.writeEnable := true.B
         stateReg := writeNextBlack
       }.otherwise {
-        io.address := inReg - 1.U
+        io.address := inReg - 1.U // Get pixel to the left
         dataRead := io.dataRead
         stateReg := checkLeft
       }
@@ -98,7 +98,7 @@ class Accelerator extends Module {
       when (dataRead === 0.U) {
         stateReg := writeBlack
       } .otherwise {
-        io.address := inReg + 1.U // Get pixel to the left
+        io.address := inReg + 1.U // Get pixel to the right
         dataRead := io.dataRead
         stateReg := checkRight
       }
@@ -107,7 +107,7 @@ class Accelerator extends Module {
       when (dataRead === 0.U) {
         stateReg := writeBlack
       } .otherwise {
-        io.address := inReg - 20.U // Get pixel to the left
+        io.address := inReg - 20.U // Get pixel above
         dataRead := io.dataRead
         stateReg := checkUp
       }
